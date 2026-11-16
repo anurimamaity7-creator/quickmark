@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body style="font-family:Arial;padding:20px">
+<h2>Attendance Report</h2>
+<button onclick="loadReport()">Refresh</button>
+<div id="out"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAN2yXlU6rs1VZ2-aBHUIVHw-5Wwwz_fU8",
+  authDomain: "quickmark-3cf1d.firebaseapp.com",
+  projectId: "quickmark-3cf1d",
+  storageBucket: "quickmark-3cf1d.firebasestorage.app",
+  messagingSenderId: "297256629437",
+  appId: "1:297256629437:web:5459985c24cd22c11c33d4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const TOTAL = 85; // total number of the students in the class
+
+async function loadReport() {
+  const today = new Date().toLocaleDateString("en-CA");
+  const snap = await db.collection("attendance").where("date", "==", today).get();
+  const present = snap.docs.map(d => d.data().roll).sort((a, b) => a - b);
+  const absent = [];
+  for (let i = 1; i <= TOTAL; i++) if (!present.includes(i)) absent.push(i);
+  const pct = ((present.length / TOTAL) * 100).toFixed(1);
+
+  document.getElementById("out").innerHTML =
+    "<h3>Date: " + today + "</h3>" +
+    "<p><b>Present:</b> " + present.length + " / " + TOTAL + " (" + pct + "%)</p>" +
+    "<p><b>Present rolls:</b> " + present.join(", ") + "</p>" +
+    "<p><b>Absent rolls:</b> " + absent.join(", ") + "</p>";
+}
+loadReport();
+</script>
+</body>
+</html>

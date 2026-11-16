@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark Attendance</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body style="font-family:Arial;text-align:center;padding:20px">
+<h2>Mark Attendance</h2>
+<input id="roll" type="number" placeholder="Enter roll number" style="font-size:20px;padding:10px">
+<br><br>
+<button onclick="submitAttendance()" style="font-size:20px;padding:10px 20px">Submit</button>
+<h3 id="msg"></h3>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAN2yXlU6rs1VZ2-aBHUIVHw-5Wwwz_fU8",
+  authDomain: "quickmark-3cf1d.firebaseapp.com",
+  projectId: "quickmark-3cf1d",
+  storageBucket: "quickmark-3cf1d.firebasestorage.app",
+  messagingSenderId: "297256629437",
+  appId: "1:297256629437:web:5459985c24cd22c11c33d4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const token = new URLSearchParams(location.search).get("token");
+const msg = t => document.getElementById("msg").innerText = t;
+
+async function submitAttendance() {
+  const roll = document.getElementById("roll").value.trim();
+  if (!roll) return msg("Enter your roll number");
+
+  const s = await db.collection("sessions").doc("current").get();
+  const d = s.data();
+  if (!d || !d.active || !token || (token !== d.token && token !== d.prevToken)) {
+    return msg("❌ Code expired. Scan the QR again.");
+  }
+
+  const today = new Date().toLocaleDateString("en-CA");
+  const ref = db.collection("attendance").doc(today + "_" + roll);
+  if ((await ref.get()).exists) return msg("Already marked ✅");
+
+  await ref.set({roll: Number(roll), date: today, time: new Date().toLocaleTimeString()});
+  msg("✅ Attendance marked!");
+}
+</script>
+</body>
+</html>
