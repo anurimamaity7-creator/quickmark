@@ -25,26 +25,37 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+db.settings({ experimentalForceLongPolling: true, merge: true });
 
 const token = new URLSearchParams(location.search).get("token");
 const msg = t => document.getElementById("msg").innerText = t;
+const withTimeout = (p) => Promise.race([
+  p,
+  new Promise((_, rej) => setTimeout(() => rej(new Error("No reply from Firebase (10s). Check internet / API key.")), 10000))
+]);
 
 async function submitAttendance() {
-  const roll = document.getElementById("roll").value.trim();
-  if (!roll) return msg("Enter your roll number");
+  try {
+    const roll = document.getElementById("roll").value.trim();
+    if (!roll) return msg("Enter your roll number");
+    msg("Checking...");
 
-  const s = await db.collection("sessions").doc("current").get();
-  const d = s.data();
-  if (!d || !d.active || !token || (token !== d.token && token !== d.prevToken)) {
-    return msg("❌ Code expired. Scan the QR again.");
+    const s = await withTimeout(db.collection("sessions").doc("current").get({source: "server"}));
+    const d = s.data();
+    if (!d || !d.active || !token || (token !== d.token && token !== d.prevToken)) {
+      return msg("❌ Code expired. Scan the QR again.");
+    }
+
+    const today = new Date().toLocaleDateString("en-CA");
+    const ref = db.collection("attendance").doc(today + "_" + roll);
+    const ex = await withTimeout(ref.get({source: "server"}));
+    if (ex.exists) return msg("Already marked ✅");
+
+    await withTimeout(ref.set({roll: Number(roll), date: today, time: new Date().toLocaleTimeString()}));
+    msg("✅ Attendance marked!");
+  } catch (e) {
+    msg("Error: " + e.message);
   }
-
-  const today = new Date().toLocaleDateString("en-CA");
-  const ref = db.collection("attendance").doc(today + "_" + roll);
-  if ((await ref.get()).exists) return msg("Already marked ✅");
-
-  await ref.set({roll: Number(roll), date: today, time: new Date().toLocaleTimeString()});
-  msg("✅ Attendance marked!");
 }
 </script>
 </body>
