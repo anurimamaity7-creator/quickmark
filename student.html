@@ -1,57 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuickMark Student</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark Attendance</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
-body{font-family:Arial; text-align:center; padding:30px; background:#f0f4ff}
-input{padding:14px; width:85%; max-width:320px; font-size:20px; border:2px solid #999; border-radius:8px; text-align:center}
-button{padding:13px 40px; font-size:20px; background:#2b4eff; color:white; border:none; border-radius:8px; margin-top:15px}
-#msg{margin-top:20px; font-weight:bold; font-size:18px}
+body{font-family:Arial;text-align:center;background:#f0f4ff;padding:40px 15px;margin:0}
+h1{font-size:32px;margin-bottom:30px}
+input{font-size:22px;padding:15px;width:85%;max-width:320px;text-align:center;border-radius:10px;border:2px solid #999;outline:none}
+button{background:#2456ff;color:white;border:none;padding:15px 40px;font-size:22px;border-radius:10px;margin-top:20px;cursor:pointer}
+#msg{font-size:20px;font-weight:bold;margin-top:25px}
 </style>
 </head>
 <body>
+
 <h1>Mark Attendance</h1>
-<p id="status">Checking session...</p>
-<input type="number" id="roll" placeholder="Roll No. likho - jaise 2"><br>
-<button onclick="submitNow()">Submit</button>
-<div id="msg"></div>
-<br><br><a href="index.html">⬅ Back to Home</a>
+
+<input id="roll" type="number" placeholder="Roll No.">
+<br>
+<button onclick="submitAtt()">Submit</button>
+<p id="msg"></p>
+
 <script>
+// --- APNA FIREBASE CONFIG YAHAN PASTE KARO ---
 const firebaseConfig = {
-  apiKey: "AIzaSyAN2yX1U6rs1VZ2-aBHUIViw-5hWnz_fU8",
-  authDomain: "quickmark-3cf1d.firebaseapp.com",
-  projectId: "quickmark-3cf1d",
-  storageBucket: "quickmark-3cf1d.firebasestorage.app",
-  messagingSenderId: "297256629437",
-  appId: "1:297256629437:web:5459985c24cd22c11c33d4"
+  PASTE_YOUR_FIREBASE_CONFIG_HERE
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const token = new URLSearchParams(window.location.search).get("token");
-document.getElementById("status").innerText = token ? "✅ QR Verified - Session Active" : "⚠️ Direct Open - Demo Mode";
 
-async function submitNow(){
-  let rollVal = document.getElementById("roll").value.trim();
-  if(!rollVal){ alert("Pehle Roll No. likho!"); return; }
-  document.getElementById("msg").innerText = "Saving...";
-  document.getElementById("msg").style.color = "blue";
-  // Report wale format me hi save karna hai - yehi main fix hai
-  let today = new Date().toLocaleDateString("en-CA");
-  let data = { roll: Number(rollVal), date: today, token: token || "demo", time: new Date().toLocaleString() };
-  try{
-    await db.collection("attendance").add(data);
-    document.getElementById("msg").innerText = "✅ Attendance Marked! Roll No. " + rollVal;
-    document.getElementById("msg").style.color = "green";
-  }catch(e){
-    document.getElementById("msg").innerText = "❌ Error: " + e.message;
-    document.getElementById("msg").style.color = "red";
-    alert("Firebase Rules wala problem hai: " + e.message);
+async function submitAtt(){
+  const rollVal = document.getElementById('roll').value;
+  if(!rollVal){
+    document.getElementById('msg').style.color = "red";
+    document.getElementById('msg').innerText = "Roll No. likho";
+    return;
   }
-  document.getElementById("roll").value = "";
+  const today = new Date().toISOString().slice(0,10);
+  try{
+    await db.collection("attendance").doc(today + "_" + rollVal).set({
+      roll: Number(rollVal),
+      date: today,
+      time: new Date().toLocaleTimeString()
+    });
+    document.getElementById('msg').style.color = "green";
+    document.getElementById('msg').innerText = "✅ Attendance Marked! Roll No. " + rollVal;
+    document.getElementById('roll').value = "";
+  }catch(e){
+    document.getElementById('msg').style.color = "red";
+    document.getElementById('msg').innerText = "Error: " + e.message;
+  }
 }
 </script>
 </body>
